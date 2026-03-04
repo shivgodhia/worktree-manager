@@ -6,9 +6,9 @@ A lightweight Zsh function that manages [git worktrees](https://git-scm.com/docs
 
 You're running AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [OpenCode](https://opencode.ai/) — and you want to run multiple agents in parallel. The problem: they all need their own checkout or they'll stomp on each other's changes. Git worktrees give each agent an isolated working directory backed by the same repo, no cloning required.
 
-[Conductor](https://www.conductor.build/) gives you a nice UI for this, but it falls apart when you need fine-grained control — stacking PRs with Graphite, running custom post-setup hooks, or integrating with your existing workflow. `wt` gives you full control over your worktrees while still being a one-liner.
+[Conductor](https://www.conductor.build/) gives you a nice UI for this, but it falls apart when you need fine-grained control — stacking PRs with Graphite, running custom post-setup hooks, or integrating with your existing workflow. Wrapper UIs also lag behind the native tools: e.g. Conductor doesn't support Codex's Plan mode. `wt` gives you full control over your worktrees while still being a one-liner.
 
-It works with any terminal-based agent because it's just directories and git. No plugins, no lock-in.
+It works with any terminal-based agent because you're running the real CLI, not a wrapper. No plugins, no feature gaps, no lock-in.
 
 ## Features
 
