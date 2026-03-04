@@ -12,19 +12,13 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
 
 `wt` wraps `git worktree` with project awareness, automatic branch creation, post-setup hooks, and tab completion.
 
-## Directory structure
+## Features
 
-```
-~/projects/                      # your git repos live here
-├── my-app/                      # main repo checkout
-├── backend/                     # another repo
-└── worktrees/                   # all worktrees go here
-    ├── my-app/
-    │   ├── feature-auth/        # worktree → branch: yourname/feature-auth
-    │   └── bugfix-header/       # worktree → branch: yourname/bugfix-header
-    └── backend/
-        └── add-caching/         # worktree → branch: yourname/add-caching
-```
+- **Auto-creation**: If a worktree doesn't exist, `wt` creates it with a branch named `<your-username>/<worktree-name>` based off `origin/main` (configurable via `WT_BASE_BRANCH`).
+- **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
+- **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
+- **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
+- **Tab completion**: Full Zsh completion for project names, existing worktree names, `--list`/`--rm` flags, and common commands.
 
 ## Installation
 
@@ -52,21 +46,21 @@ Or do it manually:
    source ~/.zsh/wt/worktree-manager.zsh
    ```
 
-3. Edit `~/.zsh/wt/worktree-manager.zsh` to set your directories and post-create hooks.
+3. Edit `~/.zsh/wt/worktree-manager.zsh` to set your directories and post-create hooks (see below).
 
 4. Restart your terminal or run `source ~/.zshrc`.
 
-## Configuration
+### Configuration
 
 Edit the variables at the top of `worktree-manager.zsh` to match your setup.
 
-### Directories
+#### Directories
 
 - `WT_PROJECTS_DIR` — where your git repos live (default: `~/projects`)
 - `WT_WORKTREES_DIR` — where worktrees are created (default: `$WT_PROJECTS_DIR/worktrees`)
 - `WT_BASE_BRANCH` — base branch for new worktrees (default: `origin/main`)
 
-### Post-create hooks
+#### Post-create hooks
 
 Commands that run automatically when a new worktree is created for a project — useful for installing dependencies, generating code, etc.
 
@@ -107,13 +101,19 @@ wt --list
 wt --rm my-app feature-auth
 ```
 
-## Features
+## Directory structure
 
-- **Auto-creation**: If a worktree doesn't exist, `wt` creates it with a branch named `<your-username>/<worktree-name>` based off `origin/main` (configurable via `WT_BASE_BRANCH`).
-- **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
-- **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
-- **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
-- **Tab completion**: Full Zsh completion for project names, existing worktree names, `--list`/`--rm` flags, and common commands.
+```
+~/projects/                      # your git repos live here
+├── my-app/                      # main repo checkout
+├── backend/                     # another repo
+└── worktrees/                   # all worktrees go here
+    ├── my-app/
+    │   ├── feature-auth/        # worktree → branch: yourname/feature-auth
+    │   └── bugfix-header/       # worktree → branch: yourname/bugfix-header
+    └── backend/
+        └── add-caching/         # worktree → branch: yourname/add-caching
+```
 
 ## How it works
 
@@ -139,4 +139,3 @@ Based on the worktree manager from [incident.io's blog post on shipping faster w
 - **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
 - **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
 - **Removed legacy `core-wts` path handling** from the original
-
