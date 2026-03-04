@@ -30,7 +30,7 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
 
 Based on the worktree manager from [incident.io's blog post on shipping faster with Claude Code and git worktrees](https://incident.io/blog/shipping-faster-with-claude-code-and-git-worktrees). This version adds:
 
-- **Configurable directories and base branch** via `WT_PROJECTS_DIR`, `WT_WORKTREES_DIR`, and `WT_BASE_BRANCH` environment variables (the original hard-coded `~/projects`)
+- **Configurable directories and base branch** via variables at the top of the script (the original hard-coded `~/projects`)
 - **Post-create hooks** (`wt_post_create_commands`) to run project-specific setup (e.g. `npm install`) automatically when a worktree is created
 - **`git fetch` before creating worktrees** so new worktrees are based on the latest remote state
 - **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
@@ -59,18 +59,11 @@ Based on the worktree manager from [incident.io's blog post on shipping faster w
 
 ## Configuration
 
-Set these environment variables in your `.zshrc` **before** sourcing the script:
+Edit the variables at the top of `worktree-manager.zsh` to match your setup:
 
-```sh
-# Where your git repos live (default: ~/projects)
-WT_PROJECTS_DIR="$HOME/projects"
-
-# Where worktrees are created (default: ~/projects/worktrees)
-WT_WORKTREES_DIR="$HOME/projects/worktrees"
-
-# Base branch for new worktrees (default: origin/main)
-WT_BASE_BRANCH="origin/main"
-```
+- `WT_PROJECTS_DIR` — where your git repos live (default: `~/projects`)
+- `WT_WORKTREES_DIR` — where worktrees are created (default: `~/projects/worktrees`)
+- `WT_BASE_BRANCH` — base branch for new worktrees (default: `origin/main`)
 
 ## Usage
 
@@ -104,19 +97,13 @@ wt --rm my-app feature-auth
 
 ## Post-create hooks
 
-Register commands to run automatically when a new worktree is created for a project. This is useful for installing dependencies, generating code, etc.
+Commands that run automatically when a new worktree is created for a project — useful for installing dependencies, generating code, etc.
 
-Add entries to the `wt_post_create_commands` associative array in your `.zshrc`, **after** sourcing the script. The key is your project directory name and the value is the command to run.
-
-For example:
+Uncomment and edit the examples in `worktree-manager.zsh`:
 
 ```sh
-source ~/.zsh/wt/worktree-manager.zsh
-
-# Examples — adapt to your own projects:
 wt_post_create_commands[my-api]="yarn && npx prisma generate"
 wt_post_create_commands[my-app]="pnpm install"
-wt_post_create_commands[ml-service]="python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt"
 ```
 
 ## Features

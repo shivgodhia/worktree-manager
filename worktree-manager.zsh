@@ -7,19 +7,16 @@
 # See README.md for installation and usage instructions.
 
 # ─── Configuration ───────────────────────────────────────────────────────────
-# Override these in your .zshrc BEFORE sourcing this file:
-#   WT_PROJECTS_DIR="$HOME/code"
-#   WT_WORKTREES_DIR="$HOME/code/worktrees"
-#   WT_BASE_BRANCH="origin/main"
-: ${WT_PROJECTS_DIR:="$HOME/projects"}
-: ${WT_WORKTREES_DIR:="$HOME/projects/worktrees"}
-: ${WT_BASE_BRANCH:="origin/main"}
+# Edit these to match your setup:
+WT_PROJECTS_DIR="$HOME/projects"
+WT_WORKTREES_DIR="$HOME/projects/worktrees"
+WT_BASE_BRANCH="origin/main"
 
-# Registry of post-create commands per project.
-# Add entries in your .zshrc after sourcing this file:
-#   wt_post_create_commands[my-app]="npm install"
-#   wt_post_create_commands[backend]="pip install -r requirements.txt"
+# Post-create hooks — commands to run after creating a worktree for a project.
+# Add your own projects here:
 typeset -gA wt_post_create_commands
+# wt_post_create_commands[my-api]="yarn && npx prisma generate"
+# wt_post_create_commands[my-app]="pnpm install"
 
 # ─── Main function ───────────────────────────────────────────────────────────
 wt() {
