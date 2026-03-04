@@ -26,19 +26,6 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
         └── add-caching/         # worktree → branch: yourname/add-caching
 ```
 
-## Credits
-
-Based on the worktree manager from [incident.io's blog post on shipping faster with Claude Code and git worktrees](https://incident.io/blog/shipping-faster-with-claude-code-and-git-worktrees). This version adds:
-
-- **Configurable directories and base branch** via variables at the top of the script (the original hard-coded `~/projects`)
-- **Post-create hooks** (`wt_post_create_commands`) to run project-specific setup (e.g. `npm install`) automatically when a worktree is created
-- **`git fetch` before creating worktrees** so new worktrees are based on the latest remote state
-- **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
-- **`--force` flag for removal** (`wt --rm --force`) to handle worktrees with uncommitted changes
-- **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
-- **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
-- **Removed legacy `core-wts` path handling** from the original
-
 ## Installation
 
 1. Clone this repo (or copy `worktree-manager.zsh` somewhere):
@@ -125,6 +112,19 @@ wt_post_create_commands[my-app]="pnpm install"
 
 - Zsh
 - Git 2.5+ (for worktree support)
+
+## Credits
+
+Based on the worktree manager from [incident.io's blog post on shipping faster with Claude Code and git worktrees](https://incident.io/blog/shipping-faster-with-claude-code-and-git-worktrees). This version adds:
+
+- **Configurable directories and base branch** via variables at the top of the script (the original hard-coded `~/projects`)
+- **Post-create hooks** (`wt_post_create_commands`) to run project-specific setup (e.g. `npm install`) automatically when a worktree is created
+- **`git fetch` before creating worktrees** so new worktrees are based on the latest remote state
+- **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
+- **`--force` flag for removal** (`wt --rm --force`) to handle worktrees with uncommitted changes
+- **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
+- **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
+- **Removed legacy `core-wts` path handling** from the original
 
 ## License
 
