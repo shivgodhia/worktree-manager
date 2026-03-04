@@ -26,12 +26,25 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
         └── add-caching/         # worktree → branch: yourname/add-caching
 ```
 
+## Credits
+
+Based on the worktree manager from [incident.io's blog post on shipping faster with Claude Code and git worktrees](https://incident.io/blog/shipping-faster-with-claude-code-and-git-worktrees). This version adds:
+
+- **Configurable directories and base branch** via `WT_PROJECTS_DIR`, `WT_WORKTREES_DIR`, and `WT_BASE_BRANCH` environment variables (the original hard-coded `~/projects`)
+- **Post-create hooks** (`wt_post_create_commands`) to run project-specific setup (e.g. `npm install`) automatically when a worktree is created
+- **`git fetch` before creating worktrees** so new worktrees are based on the latest remote state
+- **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
+- **`--force` flag for removal** (`wt --rm --force`) to handle worktrees with uncommitted changes
+- **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
+- **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
+- **Removed legacy `core-wts` path handling** from the original
+
 ## Installation
 
 1. Clone this repo (or copy `worktree-manager.zsh` somewhere):
 
    ```sh
-   git clone https://github.com/YOUR_USERNAME/wt.git ~/.zsh/wt
+   git clone https://github.com/shivgodhia/worktree-manager.git ~/.zsh/wt
    ```
 
 2. Add to your `.zshrc`:
@@ -93,18 +106,16 @@ wt --rm my-app feature-auth
 
 Register commands to run automatically when a new worktree is created for a project. This is useful for installing dependencies, generating code, etc.
 
-Add these in your `.zshrc` **after** sourcing the script:
+Add entries to the `wt_post_create_commands` associative array in your `.zshrc`, **after** sourcing the script. The key is your project directory name and the value is the command to run.
+
+For example:
 
 ```sh
 source ~/.zsh/wt/worktree-manager.zsh
 
-# Install deps and generate Prisma client for a Node project
-wt_post_create_commands[backend]="yarn && npx prisma generate"
-
-# pnpm monorepo
-wt_post_create_commands[frontend]="pnpm install"
-
-# Python project
+# Examples — adapt to your own projects:
+wt_post_create_commands[my-api]="yarn && npx prisma generate"
+wt_post_create_commands[my-app]="pnpm install"
 wt_post_create_commands[ml-service]="python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt"
 ```
 
