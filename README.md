@@ -132,6 +132,3 @@ Based on the worktree manager from [incident.io's blog post on shipping faster w
 - **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
 - **Removed legacy `core-wts` path handling** from the original
 
-## License
-
-MIT
