@@ -4,13 +4,11 @@ A lightweight Zsh function that manages [git worktrees](https://git-scm.com/docs
 
 ## Why worktrees?
 
-Git worktrees let you check out multiple branches of the same repo simultaneously, each in its own directory. This is useful when you:
+You're running AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [OpenCode](https://opencode.ai/) — and you want to run multiple agents in parallel. The problem: they all need their own checkout or they'll stomp on each other's changes. Git worktrees give each agent an isolated working directory backed by the same repo, no cloning required.
 
-- Want to work on a feature while keeping `main` clean for code review
-- Need to run two branches side-by-side (e.g. comparing behavior)
-- Want to hand a branch to [Claude Code](https://docs.anthropic.com/en/docs/claude-code) without disrupting your working copy
+[Conductor](https://www.conductor.build/) gives you a nice UI for this, but it falls apart when you need fine-grained control — stacking PRs with Graphite, running custom post-setup hooks, or integrating with your existing workflow. `wt` gives you full control over your worktrees while still being a one-liner.
 
-`wt` wraps `git worktree` with project awareness, automatic branch creation, post-setup hooks, and tab completion.
+It works with any terminal-based agent because it's just directories and git. No plugins, no lock-in.
 
 ## Features
 
