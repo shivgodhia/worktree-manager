@@ -9,7 +9,7 @@
 # ─── Configuration ───────────────────────────────────────────────────────────
 # Edit these to match your setup:
 WT_PROJECTS_DIR="$HOME/projects"
-WT_WORKTREES_DIR="$HOME/projects/worktrees"
+WT_WORKTREES_DIR="$WT_PROJECTS_DIR/worktrees"
 WT_BASE_BRANCH="origin/main"
 
 # Post-create hooks — commands to run after creating a worktree for a project.
