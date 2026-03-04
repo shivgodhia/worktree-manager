@@ -31,7 +31,12 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
 Copy this prompt into Claude Code (or your AI tool of choice):
 
 ```
-Clone https://github.com/shivgodhia/worktree-manager.git to ~/.zsh/wt and add `source ~/.zsh/wt/worktree-manager.zsh` to my .zshrc. Then open ~/.zsh/wt/worktree-manager.zsh and configure WT_PROJECTS_DIR and WT_WORKTREES_DIR to match where my git repos live. Add any post-create hooks I need for my projects.
+Clone https://github.com/shivgodhia/worktree-manager.git
+to ~/.zsh/wt and add `source ~/.zsh/wt/worktree-manager.zsh`
+to my .zshrc. Then open ~/.zsh/wt/worktree-manager.zsh and
+configure WT_PROJECTS_DIR and WT_WORKTREES_DIR to match where
+my git repos live. Add any post-create hooks I need for my
+projects.
 ```
 
 Or do it manually:
@@ -54,11 +59,24 @@ Or do it manually:
 
 ## Configuration
 
-Edit the variables at the top of `worktree-manager.zsh` to match your setup:
+Edit the variables at the top of `worktree-manager.zsh` to match your setup.
+
+### Directories
 
 - `WT_PROJECTS_DIR` — where your git repos live (default: `~/projects`)
-- `WT_WORKTREES_DIR` — where worktrees are created (default: `~/projects/worktrees`)
+- `WT_WORKTREES_DIR` — where worktrees are created (default: `$WT_PROJECTS_DIR/worktrees`)
 - `WT_BASE_BRANCH` — base branch for new worktrees (default: `origin/main`)
+
+### Post-create hooks
+
+Commands that run automatically when a new worktree is created for a project — useful for installing dependencies, generating code, etc.
+
+Uncomment and edit the examples in `worktree-manager.zsh`:
+
+```sh
+wt_post_create_commands[my-api]="yarn && npx prisma generate"
+wt_post_create_commands[my-app]="pnpm install"
+```
 
 ## Usage
 
@@ -88,17 +106,6 @@ wt --list
 
 # Clean up when done
 wt --rm my-app feature-auth
-```
-
-## Post-create hooks
-
-Commands that run automatically when a new worktree is created for a project — useful for installing dependencies, generating code, etc.
-
-Uncomment and edit the examples in `worktree-manager.zsh`:
-
-```sh
-wt_post_create_commands[my-api]="yarn && npx prisma generate"
-wt_post_create_commands[my-app]="pnpm install"
 ```
 
 ## Features
