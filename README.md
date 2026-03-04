@@ -30,7 +30,9 @@ Git worktrees let you check out multiple branches of the same repo simultaneousl
 
 Copy this prompt into Claude Code (or your AI tool of choice):
 
-> Clone https://github.com/shivgodhia/worktree-manager.git to ~/.zsh/wt and add `source ~/.zsh/wt/worktree-manager.zsh` to my .zshrc. Then open ~/.zsh/wt/worktree-manager.zsh and configure WT_PROJECTS_DIR and WT_WORKTREES_DIR to match where my git repos live. Add any post-create hooks I need for my projects.
+```
+Clone https://github.com/shivgodhia/worktree-manager.git to ~/.zsh/wt and add `source ~/.zsh/wt/worktree-manager.zsh` to my .zshrc. Then open ~/.zsh/wt/worktree-manager.zsh and configure WT_PROJECTS_DIR and WT_WORKTREES_DIR to match where my git repos live. Add any post-create hooks I need for my projects.
+```
 
 Or do it manually:
 
