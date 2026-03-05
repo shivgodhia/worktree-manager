@@ -77,6 +77,7 @@ wt <project> <worktree> <command>    # run a command in the worktree
 wt --list                            # list all worktrees
 wt --rm <project> <worktree>         # remove a worktree
 wt --rm --force <project> <worktree> # force remove (uncommitted changes)
+wt --home                            # cd to projects directory
 ```
 
 ### Examples
