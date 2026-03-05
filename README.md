@@ -99,6 +99,35 @@ wt --list
 wt --rm my-app feature-auth
 ```
 
+## Claude Code skill
+
+This repo includes a [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets you manage worktrees with `/worktree` inside Claude Code.
+
+**Install:**
+
+```sh
+# From your project directory (or globally in ~/.claude/skills/)
+cp -r ~/.zsh/wt/skills/worktree .claude/skills/
+```
+
+Or symlink it:
+
+```sh
+mkdir -p ~/.claude/skills
+ln -s ~/.zsh/wt/skills/worktree ~/.claude/skills/worktree
+```
+
+**Usage inside Claude Code:**
+
+```
+/worktree create fix the auth bug
+/worktree list
+/worktree cd fix-auth-bug
+/worktree delete fix-auth-bug
+```
+
+The skill parses your intent, generates a kebab-case worktree name, confirms with you, and runs the right `wt` commands.
+
 ## Directory structure
 
 ```
