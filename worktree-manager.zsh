@@ -4,6 +4,12 @@
 # Manages git worktrees across multiple projects with auto-creation,
 # per-project setup hooks, direnv support, and full tab completion.
 #
+# BRANCH RESOLUTION:
+# When you run `wt <project> <name>`, it checks (in order):
+# 1. Existing local worktree with that directory name → cd into it
+# 2. Remote branch matching <name> on origin → create worktree tracking it
+# 3. Otherwise → create new branch as <your-username>/<name> off origin/main
+#
 # See README.md for installation and usage instructions.
 
 # ─── Configuration ───────────────────────────────────────────────────────────
@@ -49,20 +55,28 @@ wt() {
             echo "Usage: wt --rm [--force] <project> <worktree>"
             return 1
         fi
-        local branch_name="$USER/$worktree"
         local wt_path="$worktrees_dir/$project/$worktree"
         if [[ ! -d "$wt_path" ]]; then
             echo "Worktree not found: $wt_path"
             return 1
         fi
-        (cd "$projects_dir/$project" && git worktree remove $force_flag "$wt_path" && git branch -D "$branch_name")
-        return $?
+
+        # Find the branch name from the worktree
+        local branch_name
+        branch_name=$(cd "$wt_path" && git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+        (cd "$projects_dir/$project" && git worktree remove $force_flag "$wt_path")
+        local rc=$?
+        if [[ $rc -eq 0 && -n "$branch_name" && "$branch_name" != "HEAD" ]]; then
+            (cd "$projects_dir/$project" && git branch -D "$branch_name" 2>/dev/null)
+        fi
+        return $rc
     fi
 
     # Normal usage: wt <project> <worktree> [command...]
     local project="$1"
     local worktree="$2"
-    shift 2
+    shift 2 2>/dev/null
     local command=("$@")
 
     if [[ -z "$project" || -z "$worktree" ]]; then
@@ -78,28 +92,55 @@ wt() {
         return 1
     fi
 
-    # Determine worktree path
+    # Sanitize worktree name for directory (replace / with -)
+    local dir_name="${worktree//\//-}"
+
+    # 1. Check if worktree directory already exists
     local wt_path=""
-    if [[ -d "$worktrees_dir/$project/$worktree" ]]; then
-        wt_path="$worktrees_dir/$project/$worktree"
+    if [[ -d "$worktrees_dir/$project/$dir_name" ]]; then
+        wt_path="$worktrees_dir/$project/$dir_name"
     fi
 
-    # If worktree doesn't exist, create it
-    if [[ -z "$wt_path" || ! -d "$wt_path" ]]; then
-        echo "Creating new worktree: $worktree"
+    # 2. Check if this branch is already checked out in another worktree
+    if [[ -z "$wt_path" ]]; then
+        local existing_path
+        existing_path=$(cd "$projects_dir/$project" && git worktree list --porcelain | awk -v branch="branch refs/heads/$worktree" '/^worktree /{wt=$0} $0 == branch{print wt}' | sed 's/^worktree //')
+        if [[ -n "$existing_path" && -d "$existing_path" ]]; then
+            echo "Branch already checked out at: $existing_path"
+            wt_path="$existing_path"
+        fi
+    fi
 
-        # Ensure worktrees directory exists
+    # 3. Worktree doesn't exist — create it
+    if [[ -z "$wt_path" ]]; then
         mkdir -p "$worktrees_dir/$project"
+        wt_path="$worktrees_dir/$project/$dir_name"
 
-        # Branch name: <username>/<worktree-name>
-        local branch_name="$USER/$worktree"
+        # Fetch and check if branch exists on origin
+        echo "Fetching from origin..."
+        (cd "$projects_dir/$project" && git fetch origin)
 
-        # Create the worktree
-        wt_path="$worktrees_dir/$project/$worktree"
-        (cd "$projects_dir/$project" && git fetch origin && git worktree add "$wt_path" -b "$branch_name" $WT_BASE_BRANCH) || {
-            echo "Failed to create worktree"
-            return 1
-        }
+        local remote_exists
+        remote_exists=$(cd "$projects_dir/$project" && git ls-remote --heads origin "$worktree" 2>/dev/null)
+
+        if [[ -n "$remote_exists" ]]; then
+            # Branch exists on origin — check it out as a tracking branch
+            echo "Found remote branch: $worktree"
+            echo "Creating worktree at $wt_path..."
+            (cd "$projects_dir/$project" && git worktree add "$wt_path" -b "$worktree" "origin/$worktree") || {
+                echo "Failed to create worktree"
+                return 1
+            }
+        else
+            # Branch doesn't exist on origin — create new branch with username prefix
+            local branch_name="$USER/$worktree"
+            echo "Creating new branch: $branch_name"
+            echo "Creating worktree at $wt_path..."
+            (cd "$projects_dir/$project" && git worktree add "$wt_path" -b "$branch_name" $WT_BASE_BRANCH) || {
+                echo "Failed to create worktree"
+                return 1
+            }
+        fi
 
         # Auto-approve direnv if .envrc exists in the new worktree
         if [[ -f "$wt_path/.envrc" ]] && command -v direnv &> /dev/null; then
