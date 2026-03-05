@@ -12,7 +12,7 @@ It works with any terminal-based agent because you're running the real CLI, not 
 
 ## Features
 
-- **Auto-creation**: If a worktree doesn't exist, `wt` creates it with a branch named `<your-username>/<worktree-name>` based off `origin/main` (configurable via `WT_BASE_BRANCH`).
+- **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<your-username>/<worktree-name>` off `origin/main` (configurable via `WT_BASE_BRANCH`).
 - **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
 - **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
 - **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
@@ -85,6 +85,9 @@ wt --rm --force <project> <worktree> # force remove (uncommitted changes)
 # Jump into a worktree (creates it if it doesn't exist)
 wt my-app feature-auth
 
+# Check out a teammate's branch from origin
+wt my-app someone/fix-bug
+
 # Run Claude Code in a worktree
 wt my-app feature-auth claude
 
@@ -108,7 +111,8 @@ wt --rm my-app feature-auth
 └── worktrees/                   # all worktrees go here
     ├── my-app/
     │   ├── feature-auth/        # worktree → branch: yourname/feature-auth
-    │   └── bugfix-header/       # worktree → branch: yourname/bugfix-header
+    │   ├── bugfix-header/       # worktree → branch: yourname/bugfix-header
+    │   └── someone-fix-bug/     # worktree → tracks origin/someone/fix-bug
     └── backend/
         └── add-caching/         # worktree → branch: yourname/add-caching
 ```
@@ -116,9 +120,12 @@ wt --rm my-app feature-auth
 ## How it works
 
 1. `wt my-app feature-x` checks if `~/projects/worktrees/my-app/feature-x` exists.
-2. If not, it runs `git fetch origin` in `~/projects/my-app`, then `git worktree add` to create the worktree with branch `yourname/feature-x` off `origin/main`.
-3. It runs any registered post-create hooks and approves direnv if applicable.
-4. Finally, it `cd`s you into the worktree (or runs your command there and returns).
+2. If not, it checks whether the branch is already checked out in another worktree.
+3. If still not found, it fetches from origin and checks if `feature-x` exists as a remote branch:
+   - **If it exists on origin** → creates a worktree tracking `origin/feature-x`
+   - **If not** → creates a new branch `yourname/feature-x` off `origin/main`
+4. It runs any registered post-create hooks and approves direnv if applicable.
+5. Finally, it `cd`s you into the worktree (or runs your command there and returns).
 
 ## Requirements
 
@@ -131,7 +138,9 @@ Based on the worktree manager from [incident.io's blog post on shipping faster w
 
 - **Configurable directories and base branch** via variables at the top of the script (the original hard-coded `~/projects`)
 - **Post-create hooks** (`wt_post_create_commands`) to run project-specific setup (e.g. `npm install`) automatically when a worktree is created
-- **`git fetch` before creating worktrees** so new worktrees are based on the latest remote state
+- **Smart branch resolution** — fetches from origin first; if the branch exists remotely, creates a tracking worktree instead of a new branch
+- **Slash-safe directory names** — branch names like `someone/fix-bug` map to directory `someone-fix-bug`
+- **Duplicate checkout detection** — warns and reuses if a branch is already checked out in another worktree
 - **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
 - **`--force` flag for removal** (`wt --rm --force`) to handle worktrees with uncommitted changes
 - **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
