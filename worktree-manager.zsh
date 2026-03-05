@@ -30,7 +30,10 @@ wt() {
     local worktrees_dir="$WT_WORKTREES_DIR"
 
     # Handle special flags
-    if [[ "$1" == "--list" ]]; then
+    if [[ "$1" == "--home" ]]; then
+        cd "$projects_dir"
+        return 0
+    elif [[ "$1" == "--list" ]]; then
         echo "=== All Worktrees ==="
         if [[ -d "$worktrees_dir" ]]; then
             for project in $worktrees_dir/*(/N); do
@@ -83,6 +86,7 @@ wt() {
         echo "Usage: wt <project> <worktree> [command...]"
         echo "       wt --list"
         echo "       wt --rm [--force] <project> <worktree>"
+        echo "       wt --home"
         return 1
     fi
 
@@ -202,7 +206,7 @@ _wt() {
     }
 
     case "${words[2]}" in
-        --list)
+        --list|--home)
             return 0
             ;;
         --rm)
@@ -229,7 +233,7 @@ _wt() {
         *)
             case $CURRENT in
                 2)
-                    local -a flags=('--list:List all worktrees' '--rm:Remove a worktree')
+                    local -a flags=('--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
                     _describe -t flags 'flag' flags
                     _wt_projects
                     ;;
