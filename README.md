@@ -12,7 +12,7 @@ It works with any terminal-based agent because you're running the real CLI, not 
 
 ## Features
 
-- **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<your-username>/<worktree-name>` off `origin/main` (configurable via `WT_BASE_BRANCH`).
+- **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<prefix>/<worktree-name>` off `origin/main` (configurable via `WT_BRANCH_PREFIX` and `WT_BASE_BRANCH`).
 - **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
 - **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
 - **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
@@ -57,6 +57,7 @@ Edit the variables at the top of `worktree-manager.zsh` to match your setup.
 - `WT_PROJECTS_DIR` — where your git repos live (default: `~/projects`)
 - `WT_WORKTREES_DIR` — where worktrees are created (default: `$WT_PROJECTS_DIR/worktrees`)
 - `WT_BASE_BRANCH` — base branch for new worktrees (default: `origin/main`)
+- `WT_BRANCH_PREFIX` — prefix for new branch names (default: `$USER`, i.e. your system username)
 
 #### Post-create hooks
 
@@ -123,7 +124,7 @@ wt --rm my-app feature-auth
 2. If not, it checks whether the branch is already checked out in another worktree.
 3. If still not found, it fetches from origin and checks if `feature-x` exists as a remote branch:
    - **If it exists on origin** → creates a worktree tracking `origin/feature-x`
-   - **If not** → creates a new branch `yourname/feature-x` off `origin/main`
+   - **If not** → creates a new branch `<prefix>/feature-x` off `origin/main` (prefix defaults to your username)
 4. It runs any registered post-create hooks and approves direnv if applicable.
 5. Finally, it `cd`s you into the worktree (or runs your command there and returns).
 

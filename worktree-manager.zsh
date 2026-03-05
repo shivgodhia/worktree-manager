@@ -8,7 +8,7 @@
 # When you run `wt <project> <name>`, it checks (in order):
 # 1. Existing local worktree with that directory name → cd into it
 # 2. Remote branch matching <name> on origin → create worktree tracking it
-# 3. Otherwise → create new branch as <your-username>/<name> off origin/main
+# 3. Otherwise → create new branch as <prefix>/<name> off origin/main
 #
 # See README.md for installation and usage instructions.
 
@@ -17,6 +17,7 @@
 WT_PROJECTS_DIR="$HOME/projects"
 WT_WORKTREES_DIR="$WT_PROJECTS_DIR/worktrees"
 WT_BASE_BRANCH="origin/main"
+WT_BRANCH_PREFIX="$USER"
 
 # Post-create hooks — commands to run after creating a worktree for a project.
 # Add your own projects here:
@@ -133,7 +134,7 @@ wt() {
             }
         else
             # Branch doesn't exist on origin — create new branch with username prefix
-            local branch_name="$USER/$worktree"
+            local branch_name="$WT_BRANCH_PREFIX/$worktree"
             echo "Creating new branch: $branch_name"
             echo "Creating worktree at $wt_path..."
             (cd "$projects_dir/$project" && git worktree add "$wt_path" -b "$branch_name" $WT_BASE_BRANCH) || {
