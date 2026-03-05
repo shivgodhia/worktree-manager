@@ -182,25 +182,27 @@ _wt() {
     local worktrees_dir="$WT_WORKTREES_DIR"
 
     _wt_projects() {
-        local -a projects
+        local -a projects displays
         for dir in $projects_dir/*(N/); do
             if [[ -d "$dir/.git" ]]; then
                 projects+=(${dir:t})
+                displays+=("${dir:t}")
             fi
         done
-        _describe -t projects 'project' projects
+        compadd -l -d displays -V projects -a projects
     }
 
     _wt_worktrees() {
         local project="$1"
-        local -a worktrees
+        local -a worktrees displays
         if [[ -d "$worktrees_dir/$project" ]]; then
             for wt_dir in $worktrees_dir/$project/*(N/); do
                 worktrees+=(${wt_dir:t})
+                displays+=("${wt_dir:t}")
             done
         fi
         if (( ${#worktrees} > 0 )); then
-            _describe -t worktrees 'existing worktree' worktrees
+            compadd -l -d displays -V worktrees -a worktrees
         else
             _message 'new worktree name'
         fi
