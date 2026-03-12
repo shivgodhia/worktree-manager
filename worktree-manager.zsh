@@ -20,18 +20,33 @@
 #
 # See README.md for installation and usage instructions.
 
-# ─── Configuration ───────────────────────────────────────────────────────────
-# Edit these to match your setup:
-WT_PROJECTS_DIR="$HOME/projects"
-WT_WORKTREES_DIR="$WT_PROJECTS_DIR/worktrees"
-WT_BASE_BRANCH="origin/main"
-WT_BRANCH_PREFIX="$USER"
+# ─── Configuration (defaults) ────────────────────────────────────────────────
+# Override any of these in worktree-manager.local.zsh (see below).
+: ${WT_PROJECTS_DIR:="$HOME/projects"}
+: ${WT_BASE_BRANCH:="origin/main"}
+: ${WT_BRANCH_PREFIX:="$USER"}
 
 # Post-create hooks — commands to run after creating a worktree for a project.
-# Add your own projects here:
 typeset -gA wt_post_create_commands
-# wt_post_create_commands[my-api]="yarn && npx prisma generate"
-# wt_post_create_commands[my-app]="pnpm install"
+
+# ─── Local overrides ────────────────────────────────────────────────────────
+# Source user-specific config (projects dir, post-create hooks, env vars, etc.)
+# from a file alongside this one. This file is gitignored so you can
+# `git pull` updates to worktree-manager.zsh without conflicts.
+#
+# Example worktree-manager.local.zsh:
+#   WT_PROJECTS_DIR="$HOME/Desktop/clones/projects"
+#   WT_BRANCH_PREFIX="shivgodhia"
+#   wt_post_create_commands[my-api]="yarn && npx prisma generate"
+#   wt_post_create_commands[my-app]="pnpm install"
+#
+local _wt_script_dir="${${(%):-%x}:A:h}"
+if [[ -f "$_wt_script_dir/worktree-manager.local.zsh" ]]; then
+    source "$_wt_script_dir/worktree-manager.local.zsh"
+fi
+
+# Derived defaults (set after local overrides so they pick up custom WT_PROJECTS_DIR)
+: ${WT_WORKTREES_DIR:="$WT_PROJECTS_DIR/worktrees"}
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
