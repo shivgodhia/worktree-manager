@@ -24,10 +24,21 @@ Copy this prompt into Claude Code (or your AI tool of choice):
 
 ```
 Clone https://github.com/shivgodhia/worktree-manager.git to ~/.zsh/wt and add `source ~/.zsh/wt/worktree-manager.zsh`
-to my .zshrc.
-Then open ~/.zsh/wt/worktree-manager.zsh and configure WT_PROJECTS_DIR and WT_WORKTREES_DIR to match where
-my git repos live.
-Add any post-create hooks I need for my projects.
+to my .zshrc. Then walk me through setting up ~/.zsh/wt/worktree-manager.local.zsh step by step, asking me
+one question at a time:
+
+1. Ask where my "projects directory" is — explain this is a single parent folder where all my git clones
+   live, and that worktrees get created in a `worktrees/` subdirectory inside it. Suggest ~/projects as
+   a default.
+2. Ask what branch prefix I want (default: $USER). Explain this is used for naming new branches as
+   <prefix>/branch-name.
+3. Iteratively ask me for git repos to clone into the projects directory. For each one:
+   - Clone it into the projects directory.
+   - Read the project's README to figure out what setup commands are needed (e.g. npm install,
+     pnpm install, yarn && npx prisma generate) and suggest a post-create hook for it.
+   - After each clone, ask if I want to add another repo or if I'm done.
+4. Copy worktree-manager.local.example.zsh to worktree-manager.local.zsh, then edit it with all the
+   collected configuration.
 ```
 
 Or do it manually:
