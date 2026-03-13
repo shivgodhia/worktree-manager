@@ -16,6 +16,7 @@ It works with any terminal-based agent because you're running the real CLI, not 
 - **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
 - **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
 - **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
+- **tmux session integration**: Each worktree gets its own tmux session, so every agent runs in an isolated terminal that you can switch between and come back to.
 - **Tab completion**: Full Zsh completion for project names, existing worktree names, `--list`/`--rm` flags, and common commands.
 
 ## Installation
