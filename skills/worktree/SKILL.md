@@ -9,11 +9,13 @@ You are helping the user manage git worktrees. This skill integrates with the us
 
 ## Worktree Manager Reference
 
-The user has a worktree manager at `~/.zsh/wt/worktree-manager.zsh`. Key details:
+The user has a worktree manager at `~/.zsh/wt/worktree-manager.zsh`. **Before running any commands**, read that file to determine the actual configured values of:
 
-- **Projects directory**: Configured via `WT_PROJECTS_DIR` (default: `~/projects`)
-- **Worktrees directory**: Configured via `WT_WORKTREES_DIR` (default: `$WT_PROJECTS_DIR/worktrees`)
-- **Branch naming**: `<username>/<worktree-name>` (e.g., `shivgodhia/fix-auth-bug`)
+- `WT_PROJECTS_DIR` — where git repos live
+- `WT_WORKTREES_DIR` — where worktrees are created
+- `WT_BRANCH_PREFIX` — prefix for new branch names
+
+Use those concrete paths (not the variable names) in all Bash commands.
 
 ### Available Commands
 
