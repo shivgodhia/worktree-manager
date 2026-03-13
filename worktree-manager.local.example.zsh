@@ -19,4 +19,10 @@ WT_PROJECTS_DIR="$HOME/Desktop/clones/projects"
 # wt_post_create_commands[my-api]="yarn && npx prisma generate"
 # wt_post_create_commands[my-app]="pnpm install"
 
+# Post-startup hooks — commands to run every time a new tmux session is created
+# for a worktree (after post-create hooks). Use for launching agents, tmux panes, etc.
+# Default applies to all projects; per-project entries override it.
+# WT_DEFAULT_POST_STARTUP_COMMAND="claude"
+# wt_post_startup_commands[my-api]="tmux split-window -h -c '#{pane_current_path}' && claude"
+
 # Any other env vars or shell config you need

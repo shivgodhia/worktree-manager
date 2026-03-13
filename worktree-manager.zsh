@@ -29,6 +29,13 @@
 # Post-create hooks — commands to run after creating a worktree for a project.
 typeset -gA wt_post_create_commands
 
+# Post-startup hooks — commands to run every time a new tmux session is created
+# for a worktree (after post-create hooks, if any). Use for launching agents,
+# adding tmux splits/panes, or any per-session setup that applies to every worktree.
+# Set a default for all projects, then override per-project as needed.
+: ${WT_DEFAULT_POST_STARTUP_COMMAND:=""}
+typeset -gA wt_post_startup_commands
+
 # ─── Local overrides ────────────────────────────────────────────────────────
 # Source user-specific config (projects dir, post-create hooks, env vars, etc.)
 # from a file alongside this one. This file is gitignored so you can
@@ -92,7 +99,8 @@ CREATING A WORKTREE
     4. A tmux session is created and you're dropped into it
 
   If you've configured post-create hooks for the project (e.g. "pnpm install"),
-  they run automatically in the new session.
+  they run automatically in the new session. Post-startup hooks (e.g. launching
+  "claude") run every time a new tmux session is created, not just on first creation.
 
 FINDING AND RETURNING TO A WORKTREE
   wt <project> <worktree-name>
@@ -159,6 +167,10 @@ CONFIGURATION
   Post-create hooks (run automatically when a worktree is first created):
     wt_post_create_commands[my-api]="yarn && npx prisma generate"
     wt_post_create_commands[my-app]="pnpm install"
+
+  Post-startup hooks (run every time a new tmux session is created):
+    WT_DEFAULT_POST_STARTUP_COMMAND="claude"          # default for all projects
+    wt_post_startup_commands[my-api]="tmux split-window -h && claude"  # override
 HELP
         return 0
     elif [[ "$1" == "--home" ]]; then
@@ -328,22 +340,31 @@ HELP
         fi
     else
         # Create new tmux session in the worktree directory
+        # Resolve post-startup command: project-specific overrides the default
+        local startup_cmd="${wt_post_startup_commands[$project]:-$WT_DEFAULT_POST_STARTUP_COMMAND}"
+
         if [[ -n "$TMUX" ]]; then
             tmux new-session -d -s "$session_name" -c "$wt_path"
             # Send post-create command into the new session before switching
             if [[ -n "$is_new_worktree" && -n "${wt_post_create_commands[$project]}" ]]; then
                 tmux send-keys -t "$session_name" "${wt_post_create_commands[$project]}" Enter
             fi
+            # Send post-startup command (runs every new session, after post-create)
+            if [[ -n "$startup_cmd" ]]; then
+                tmux send-keys -t "$session_name" "$startup_cmd" Enter
+            fi
             tmux switch-client -t "$session_name"
         else
+            tmux new-session -d -s "$session_name" -c "$wt_path"
             # Send post-create command after session starts
             if [[ -n "$is_new_worktree" && -n "${wt_post_create_commands[$project]}" ]]; then
-                tmux new-session -d -s "$session_name" -c "$wt_path"
                 tmux send-keys -t "$session_name" "${wt_post_create_commands[$project]}" Enter
-                tmux attach-session -t "$session_name"
-            else
-                tmux new-session -s "$session_name" -c "$wt_path"
             fi
+            # Send post-startup command (runs every new session, after post-create)
+            if [[ -n "$startup_cmd" ]]; then
+                tmux send-keys -t "$session_name" "$startup_cmd" Enter
+            fi
+            tmux attach-session -t "$session_name"
         fi
     fi
 }
