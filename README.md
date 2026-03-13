@@ -39,6 +39,14 @@ one question at a time:
    - After each clone, ask if I want to add another repo or if I'm done.
 4. Copy worktree-manager.local.example.zsh to worktree-manager.local.zsh, then edit it with all the
    collected configuration.
+5. Ask if I want terminal tab titles to automatically show the worktree name. Explain that this
+   makes tmux set the terminal tab title to the session name (e.g. "wt/my-app/feature-auth"), so
+   each tab is easy to identify. If yes, find my tmux config (~/.config/tmux/tmux.conf or
+   ~/.tmux.conf) and add `set-option -g set-titles on` and `set-option -g set-titles-string '#S'`
+   if they aren't already present. Then ask which terminal emulator they use (e.g. iTerm2, Alacritty,
+   Kitty, WezTerm, Terminal.app) and walk them through enabling the setting that lets applications
+   change the tab/window title — for example, in iTerm2 this is under Profiles → General → Title
+   where "Applications in terminal may change the title" must be checked.
 ```
 
 Or do it manually:
@@ -143,6 +151,21 @@ ln -s ~/.zsh/wt/skills/worktree ~/.claude/skills/worktree
 ```
 
 The skill parses your intent, generates a kebab-case worktree name, confirms with you, and runs the right `wt` commands.
+
+## Terminal tab titles
+
+When you use `wt` to jump into a worktree, it creates a tmux session named `wt/<project>/<worktree>`. If your terminal emulator is configured to display the tmux session name, each tab automatically gets a descriptive title — so instead of a sea of identical "zsh" tabs, you see exactly which project and worktree each tab is for.
+
+To enable this, add the following to your tmux config (`~/.config/tmux/tmux.conf` or `~/.tmux.conf`):
+
+```
+set-option -g set-titles on
+set-option -g set-titles-string '#S'
+```
+
+`#S` is the tmux session name. `set-titles on` tells tmux to push it to the terminal as the window title, which iTerm2 (and most other terminal emulators) display as the tab name.
+
+In iTerm2, make sure **Profiles → General → Title** includes "Applications in terminal may change the title".
 
 ## Directory structure
 
