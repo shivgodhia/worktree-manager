@@ -41,8 +41,10 @@ one question at a time:
    - After each clone, ask if I want to add another repo or if I'm done.
 4. Ask if I want an AI agent (like Claude Code) to launch automatically in every new worktree session.
    Explain this is a post-startup hook that runs every time a tmux session is created, not just on first
-   creation. If yes, ask which agent command to use (default: `claude`) and configure
-   `wt_post_startup_commands` for each project.
+   creation. If yes, ask which agent command to use (default: `claude`) and set it as
+   `WT_DEFAULT_POST_STARTUP_COMMAND`. Then ask if any specific projects need a different startup
+   command (e.g. a tmux split pane layout) — if so, configure those as per-project overrides
+   with `wt_post_startup_commands[project]`.
 5. Copy worktree-manager.local.example.zsh to worktree-manager.local.zsh, then edit it with all the
    collected configuration.
 6. Ask if I want terminal tab titles to automatically show the worktree name. Explain that this
@@ -83,6 +85,7 @@ Edit the variables at the top of `worktree-manager.zsh` to match your setup.
 - `WT_WORKTREES_DIR` — where worktrees are created (default: `$WT_PROJECTS_DIR/worktrees`)
 - `WT_BASE_BRANCH` — base branch for new worktrees (default: `origin/main`)
 - `WT_BRANCH_PREFIX` — prefix for new branch names (default: `$USER`, i.e. your system username)
+- `WT_DEFAULT_POST_STARTUP_COMMAND` — command to run in every new tmux session (default: none). Per-project `wt_post_startup_commands` entries override this.
 
 #### Post-create hooks
 
@@ -99,11 +102,13 @@ wt_post_create_commands[my-app]="pnpm install"
 
 Commands that run every time a new tmux session is created for a worktree — not just the first time. These run after post-create hooks (if any). Use them to launch AI agents, set up tmux pane layouts, or any per-session setup that should apply to every worktree.
 
-```sh
-# Launch Claude Code in every new worktree session
-wt_post_startup_commands[my-app]="claude"
+Set a default for all projects with `WT_DEFAULT_POST_STARTUP_COMMAND`, then override specific projects as needed:
 
-# Create a split pane and launch an agent
+```sh
+# Launch Claude Code in every new worktree session (all projects)
+WT_DEFAULT_POST_STARTUP_COMMAND="claude"
+
+# Override for a specific project — e.g. add a split pane
 wt_post_startup_commands[my-api]="tmux split-window -h -c '#{pane_current_path}' && claude"
 ```
 
