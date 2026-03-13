@@ -64,7 +64,104 @@ wt() {
     local worktrees_dir="$WT_WORKTREES_DIR"
 
     # Handle special flags
-    if [[ "$1" == "--home" ]]; then
+    if [[ "$1" == "--help" ]]; then
+        cat <<'HELP'
+wt - Git Worktree Manager with tmux Integration
+
+QUICK START
+  wt my-app my-feature        Create a worktree and open it in a tmux session
+  ... do your work ...
+  wt --rm my-app my-feature   Delete the worktree when you're done
+
+HOW IT WORKS
+  Git worktrees let you have multiple branches checked out at once, each in
+  its own directory. This tool wraps that with tmux so every worktree gets
+  a persistent terminal session you can return to at any time.
+
+CREATING A WORKTREE
+  wt <project> <worktree-name>
+
+  The first argument is the name of a project (a git repo in your projects
+  directory). The second is a name for your worktree — usually a feature or
+  branch name like "add-search" or "fix-login-bug".
+
+  What happens:
+    1. A new directory is created for the worktree
+    2. If the branch exists on the remote, it checks it out
+    3. If not, it creates a new branch (prefixed with your username)
+    4. A tmux session is created and you're dropped into it
+
+  If you've configured post-create hooks for the project (e.g. "pnpm install"),
+  they run automatically in the new session.
+
+FINDING AND RETURNING TO A WORKTREE
+  wt <project> <worktree-name>
+
+  The same command you used to create it. If the worktree already exists,
+  it simply switches you to its tmux session. This is the key workflow:
+  you never need to remember paths or find directories — just run `wt`
+  with the same project and name.
+
+  Use tab completion to see your existing worktrees — type `wt my-app `
+  and press Tab.
+
+  wt --list
+
+  Shows all worktrees across all projects, and marks which ones have an
+  active tmux session.
+
+THE TMUX INTEGRATION
+  Every worktree gets a dedicated tmux session (named "wt/<project>/<name>").
+  This gives you:
+
+  Persistent workspace — Your terminal state is preserved. If you have
+    Claude Code running, split panes open, or a dev server going, it's all
+    still there when you come back.
+
+  No duplicates — Running `wt my-app my-feature` a second time doesn't
+    create a new terminal. It switches to the existing session. This means
+    you won't accidentally end up with two Claude Code instances editing the
+    same worktree.
+
+  Tab titles — If your terminal supports it (e.g. iTerm2), the tab title
+    shows the session name, so you can see at a glance which worktree each
+    tab is for. (Requires tmux config: set-option -g set-titles on)
+
+  Clean switching — If you're already inside tmux, `wt` switches sessions
+    seamlessly. If you're outside tmux, it attaches to the session.
+
+DELETING A WORKTREE
+  wt --rm <project> <worktree-name>
+
+  This removes the worktree directory, deletes the local branch, and kills
+  the tmux session. If you have uncommitted changes, add --force:
+
+  wt --rm --force <project> <worktree-name>
+
+RUNNING A ONE-OFF COMMAND
+  wt <project> <worktree-name> <command>
+
+  Runs a command in the worktree directory without tmux. Useful for quick
+  checks like:
+    wt my-app my-feature git status
+    wt my-app my-feature npm test
+
+OTHER COMMANDS
+  wt --list        List all worktrees and their tmux session status
+  wt --home        cd to your projects directory
+
+CONFIGURATION
+  Override defaults in worktree-manager.local.zsh (gitignored):
+    WT_PROJECTS_DIR     Where your git repos live (default: ~/projects)
+    WT_BASE_BRANCH      Base branch for new worktrees (default: origin/main)
+    WT_BRANCH_PREFIX    Prefix for new branches (default: your username)
+
+  Post-create hooks (run automatically when a worktree is first created):
+    wt_post_create_commands[my-api]="yarn && npx prisma generate"
+    wt_post_create_commands[my-app]="pnpm install"
+HELP
+        return 0
+    elif [[ "$1" == "--home" ]]; then
         cd "$projects_dir"
         return 0
     elif [[ "$1" == "--list" ]]; then
@@ -140,6 +237,7 @@ wt() {
         echo "       wt --list"
         echo "       wt --rm [--force] <project> <worktree>"
         echo "       wt --home"
+        echo "       wt --help"
         return 1
     fi
 
@@ -283,7 +381,7 @@ _wt() {
     }
 
     case "${words[2]}" in
-        --list|--home)
+        --list|--home|--help)
             return 0
             ;;
         --rm)
@@ -310,7 +408,7 @@ _wt() {
         *)
             case $CURRENT in
                 2)
-                    local -a flags=('--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
+                    local -a flags=('--help:Show usage guide' '--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
                     _describe -t flags 'flag' flags
                     _wt_projects
                     ;;
