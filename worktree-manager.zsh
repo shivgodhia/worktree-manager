@@ -155,6 +155,8 @@ RUNNING A ONE-OFF COMMAND
     wt my-app my-feature npm test
 
 OTHER COMMANDS
+  wt --kms         Remove the current worktree (run from inside a worktree)
+  wt --kms --force Same, but force-remove even with uncommitted changes
   wt --list        List all worktrees and their tmux session status
   wt --home        cd to your projects directory
 
@@ -194,6 +196,31 @@ HELP
             done
         fi
         return 0
+    elif [[ "$1" == "--kms" ]]; then
+        # "Kill myself" — remove the current worktree from within it
+        shift
+        local force_flag=""
+        if [[ "$1" == "--force" ]]; then
+            force_flag="--force"
+            shift
+        fi
+        local cwd="$PWD"
+        # Check if we're inside the worktrees directory
+        if [[ "$cwd" != "$worktrees_dir/"* ]]; then
+            echo "Not inside a wt-managed worktree"
+            return 1
+        fi
+        # Extract project and worktree from path: $worktrees_dir/<project>/<worktree>/...
+        local relative="${cwd#$worktrees_dir/}"
+        local project="${relative%%/*}"
+        local worktree="${${relative#*/}%%/*}"
+        if [[ -z "$project" || -z "$worktree" ]]; then
+            echo "Could not determine project/worktree from current path"
+            return 1
+        fi
+        echo "Removing worktree: $project/$worktree"
+        wt --rm $force_flag "$project" "$worktree"
+        return $?
     elif [[ "$1" == "--rm" ]]; then
         shift
         local force_flag=""
@@ -248,6 +275,7 @@ HELP
         echo "       wt <project> <worktree> <command>    # run command in worktree (no tmux)"
         echo "       wt --list"
         echo "       wt --rm [--force] <project> <worktree>"
+        echo "       wt --kms                              # remove current worktree (from inside it)"
         echo "       wt --home"
         echo "       wt --help"
         return 1
@@ -441,7 +469,7 @@ _wt_fzf_complete_widget() {
             local -a candidates=()
 
             # Add flags
-            candidates+=("--help" "--home" "--list" "--rm")
+            candidates+=("--help" "--home" "--kms" "--list" "--rm")
 
             # Add projects
             for dir in $projects_dir/*(N/); do
@@ -465,7 +493,7 @@ _wt_fzf_complete_widget() {
         3)
             local arg1="${tokens[2]}"
             case "$arg1" in
-                --list|--home|--help)
+                --list|--home|--help|--kms)
                     return 0
                     ;;
                 --rm)
@@ -656,7 +684,7 @@ else
         }
 
         case "${words[2]}" in
-            --list|--home|--help)
+            --list|--home|--help|--kms)
                 return 0
                 ;;
             --rm)
@@ -683,7 +711,7 @@ else
             *)
                 case $CURRENT in
                     2)
-                        local -a flags=('--help:Show usage guide' '--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
+                        local -a flags=('--help:Show usage guide' '--home:cd to projects directory' '--kms:Remove current worktree' '--list:List all worktrees' '--rm:Remove a worktree')
                         _describe -t flags 'flag' flags
                         _wt_projects
                         ;;
