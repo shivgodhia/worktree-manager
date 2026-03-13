@@ -370,95 +370,349 @@ HELP
 }
 
 # ─── Tab completion ──────────────────────────────────────────────────────────
-_wt() {
+
+# FZF-powered fuzzy-find completion for wt.
+# Provides fuzzy matching with colored match highlights for both
+# project names and worktree names. Falls back to standard zsh
+# completion if fzf is not installed.
+
+_wt_fzf_available() {
+    (( $+commands[fzf] ))
+}
+
+# Pipe candidates through fzf for fuzzy selection.
+# Args: $1 = query (current word being typed), rest = candidates
+# Returns selected candidate on stdout, exit code 0 if selected.
+_wt_fzf_select() {
+    local query="$1"; shift
+    local -a candidates=("$@")
+    if (( ${#candidates} == 0 )); then
+        return 1
+    fi
+    # Single exact match — skip fzf
+    if (( ${#candidates} == 1 )); then
+        echo "${candidates[1]}"
+        return 0
+    fi
+    printf '%s\n' "${candidates[@]}" | fzf \
+        --height=~40% \
+        --layout=reverse \
+        --query="$query" \
+        --select-1 \
+        --exit-0 \
+        --color='hl:magenta:underline,hl+:magenta:underline' \
+        --no-info \
+        --no-sort \
+        --bind='tab:accept'
+}
+
+# ZLE widget: intercepts tab when typing a `wt` command and uses fzf
+# for fuzzy project/worktree selection. For other commands, falls
+# through to the normal tab-completion widget.
+_wt_fzf_complete_widget() {
+    local tokens=(${(z)LBUFFER})
+    local cmd="${tokens[1]}"
+
+    # Only intercept for the wt command
+    if [[ "$cmd" != "wt" ]]; then
+        zle "${_wt_orig_tab_widget:-expand-or-complete}"
+        return
+    fi
+
+    local nargs=${#tokens}
+    # If cursor is right after a space, we're starting a new argument
+    local current_word=""
+    if [[ "$LBUFFER" == *" " ]]; then
+        (( nargs++ ))
+    else
+        current_word="${tokens[-1]}"
+    fi
+
     local projects_dir="$WT_PROJECTS_DIR"
     local worktrees_dir="$WT_WORKTREES_DIR"
 
-    _wt_projects() {
-        local -a projects displays
-        for dir in $projects_dir/*(N/); do
-            if [[ -d "$dir/.git" ]]; then
-                projects+=(${dir:t})
-                displays+=("${dir:t}")
-            fi
-        done
-        compadd -l -d displays -V projects -a projects
-    }
+    # Determine what we're completing based on argument position
+    case "$nargs" in
+        1)
+            # Just "wt" with cursor right after — complete projects (position 2)
+            ;& # fall through
+        2)
+            # Completing first argument: flags + projects
+            local -a candidates=()
 
-    _wt_worktrees() {
-        local project="$1"
-        local -a worktrees displays
-        if [[ -d "$worktrees_dir/$project" ]]; then
-            for wt_dir in $worktrees_dir/$project/*(N/); do
-                worktrees+=(${wt_dir:t})
-                displays+=("${wt_dir:t}")
+            # Add flags
+            candidates+=("--help" "--home" "--list" "--rm")
+
+            # Add projects
+            for dir in $projects_dir/*(N/); do
+                if [[ -d "$dir/.git" ]]; then
+                    candidates+=(${dir:t})
+                fi
             done
-        fi
-        if (( ${#worktrees} > 0 )); then
-            compadd -l -d displays -V worktrees -a worktrees
-        else
-            _message 'new worktree name'
-        fi
-    }
 
-    case "${words[2]}" in
-        --list|--home|--help)
-            return 0
+            local selection
+            selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+            if [[ -n "$selection" ]]; then
+                # Replace current word (or append) with selection
+                if [[ -n "$current_word" ]]; then
+                    LBUFFER="${LBUFFER%${current_word}}${selection} "
+                else
+                    LBUFFER+="${selection} "
+                fi
+                zle reset-prompt
+            fi
             ;;
-        --rm)
-            case $CURRENT in
-                3)
-                    local -a force_opt=('--force:Force remove worktree with uncommitted changes')
-                    _describe -t options 'option' force_opt
-                    _wt_projects
+        3)
+            local arg1="${tokens[2]}"
+            case "$arg1" in
+                --list|--home|--help)
+                    return 0
                     ;;
-                4)
-                    if [[ "${words[3]}" == "--force" ]]; then
-                        _wt_projects
-                    else
-                        _wt_worktrees "${words[3]}"
+                --rm)
+                    # Completing project for --rm (also offer --force)
+                    local -a candidates=("--force")
+                    for dir in $projects_dir/*(N/); do
+                        if [[ -d "$dir/.git" ]]; then
+                            candidates+=(${dir:t})
+                        fi
+                    done
+                    local selection
+                    selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+                    if [[ -n "$selection" ]]; then
+                        if [[ -n "$current_word" ]]; then
+                            LBUFFER="${LBUFFER%${current_word}}${selection} "
+                        else
+                            LBUFFER+="${selection} "
+                        fi
+                        zle reset-prompt
                     fi
-                    ;;
-                5)
-                    if [[ "${words[3]}" == "--force" ]]; then
-                        _wt_worktrees "${words[4]}"
-                    fi
-                    ;;
-            esac
-            ;;
-        *)
-            case $CURRENT in
-                2)
-                    local -a flags=('--help:Show usage guide' '--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
-                    _describe -t flags 'flag' flags
-                    _wt_projects
-                    ;;
-                3)
-                    _wt_worktrees "${words[2]}"
-                    ;;
-                4)
-                    local -a common_commands=(
-                        'claude:Start Claude Code session'
-                        'gst:Git status'
-                        'gaa:Git add all'
-                        'gcmsg:Git commit with message'
-                        'gp:Git push'
-                        'gco:Git checkout'
-                        'gd:Git diff'
-                        'gl:Git log'
-                        'npm:Run npm commands'
-                        'yarn:Run yarn commands'
-                        'make:Run make commands'
-                    )
-                    _describe -t commands 'command' common_commands
-                    _command_names -e
                     ;;
                 *)
-                    _normal
+                    # Completing worktree for a project
+                    local project="$arg1"
+                    local -a candidates=()
+                    if [[ -d "$worktrees_dir/$project" ]]; then
+                        for wt_dir in $worktrees_dir/$project/*(N/); do
+                            candidates+=(${wt_dir:t})
+                        done
+                    fi
+                    if (( ${#candidates} == 0 )); then
+                        # No worktrees — let user type a new name
+                        zle -M "No existing worktrees for $project — type a new worktree name"
+                        return 0
+                    fi
+                    local selection
+                    selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+                    if [[ -n "$selection" ]]; then
+                        if [[ -n "$current_word" ]]; then
+                            LBUFFER="${LBUFFER%${current_word}}${selection} "
+                        else
+                            LBUFFER+="${selection} "
+                        fi
+                        zle reset-prompt
+                    fi
                     ;;
             esac
+            ;;
+        4)
+            local arg1="${tokens[2]}"
+            case "$arg1" in
+                --rm)
+                    local arg2="${tokens[3]}"
+                    if [[ "$arg2" == "--force" ]]; then
+                        # Completing project after --rm --force
+                        local -a candidates=()
+                        for dir in $projects_dir/*(N/); do
+                            if [[ -d "$dir/.git" ]]; then
+                                candidates+=(${dir:t})
+                            fi
+                        done
+                        local selection
+                        selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+                        if [[ -n "$selection" ]]; then
+                            if [[ -n "$current_word" ]]; then
+                                LBUFFER="${LBUFFER%${current_word}}${selection} "
+                            else
+                                LBUFFER+="${selection} "
+                            fi
+                            zle reset-prompt
+                        fi
+                    else
+                        # Completing worktree for --rm <project>
+                        local project="$arg2"
+                        local -a candidates=()
+                        if [[ -d "$worktrees_dir/$project" ]]; then
+                            for wt_dir in $worktrees_dir/$project/*(N/); do
+                                candidates+=(${wt_dir:t})
+                            done
+                        fi
+                        if (( ${#candidates} == 0 )); then
+                            zle -M "No worktrees for $project"
+                            return 0
+                        fi
+                        local selection
+                        selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+                        if [[ -n "$selection" ]]; then
+                            if [[ -n "$current_word" ]]; then
+                                LBUFFER="${LBUFFER%${current_word}}${selection} "
+                            else
+                                LBUFFER+="${selection} "
+                            fi
+                            zle reset-prompt
+                        fi
+                    fi
+                    ;;
+                *)
+                    # Position 4 for normal flow: command completion — fall through to default
+                    zle "${_wt_orig_tab_widget:-expand-or-complete}"
+                    return
+                    ;;
+            esac
+            ;;
+        5)
+            local arg1="${tokens[2]}"
+            if [[ "$arg1" == "--rm" && "${tokens[3]}" == "--force" ]]; then
+                # Completing worktree for --rm --force <project>
+                local project="${tokens[4]}"
+                local -a candidates=()
+                if [[ -d "$worktrees_dir/$project" ]]; then
+                    for wt_dir in $worktrees_dir/$project/*(N/); do
+                        candidates+=(${wt_dir:t})
+                    done
+                fi
+                if (( ${#candidates} == 0 )); then
+                    zle -M "No worktrees for $project"
+                    return 0
+                fi
+                local selection
+                selection=$(_wt_fzf_select "$current_word" "${candidates[@]}")
+                if [[ -n "$selection" ]]; then
+                    if [[ -n "$current_word" ]]; then
+                        LBUFFER="${LBUFFER%${current_word}}${selection} "
+                    else
+                        LBUFFER+="${selection} "
+                    fi
+                    zle reset-prompt
+                fi
+            else
+                zle "${_wt_orig_tab_widget:-expand-or-complete}"
+                return
+            fi
+            ;;
+        *)
+            # Beyond our completion positions — fall through to default
+            zle "${_wt_orig_tab_widget:-expand-or-complete}"
+            return
             ;;
     esac
 }
 
-compdef _wt wt
+# Register the fzf completion widget, preserving the original tab binding
+if _wt_fzf_available; then
+    # Save whatever widget is currently bound to tab, skipping our own widget
+    _wt_orig_tab_widget="${$(bindkey '^I' 2>/dev/null)##*\" }"
+    if [[ "$_wt_orig_tab_widget" == "_wt_fzf_complete_widget" || -z "$_wt_orig_tab_widget" ]]; then
+        _wt_orig_tab_widget="expand-or-complete"
+    fi
+
+    # Stub _wt so any cached compdef doesn't error when standard
+    # completion falls through (e.g. position 4+ for command args)
+    _wt() { return 0; }
+    compdef _wt wt
+
+    zle -N _wt_fzf_complete_widget
+    bindkey '^I' _wt_fzf_complete_widget
+else
+    # Fallback: standard zsh completion without fzf
+    _wt() {
+        local projects_dir="$WT_PROJECTS_DIR"
+        local worktrees_dir="$WT_WORKTREES_DIR"
+
+        _wt_projects() {
+            local -a projects displays
+            for dir in $projects_dir/*(N/); do
+                if [[ -d "$dir/.git" ]]; then
+                    projects+=(${dir:t})
+                    displays+=("${dir:t}")
+                fi
+            done
+            compadd -l -d displays -V projects -a projects
+        }
+
+        _wt_worktrees() {
+            local project="$1"
+            local -a worktrees displays
+            if [[ -d "$worktrees_dir/$project" ]]; then
+                for wt_dir in $worktrees_dir/$project/*(N/); do
+                    worktrees+=(${wt_dir:t})
+                    displays+=("${wt_dir:t}")
+                done
+            fi
+            if (( ${#worktrees} > 0 )); then
+                compadd -l -d displays -V worktrees -a worktrees
+            else
+                _message 'new worktree name'
+            fi
+        }
+
+        case "${words[2]}" in
+            --list|--home|--help)
+                return 0
+                ;;
+            --rm)
+                case $CURRENT in
+                    3)
+                        local -a force_opt=('--force:Force remove worktree with uncommitted changes')
+                        _describe -t options 'option' force_opt
+                        _wt_projects
+                        ;;
+                    4)
+                        if [[ "${words[3]}" == "--force" ]]; then
+                            _wt_projects
+                        else
+                            _wt_worktrees "${words[3]}"
+                        fi
+                        ;;
+                    5)
+                        if [[ "${words[3]}" == "--force" ]]; then
+                            _wt_worktrees "${words[4]}"
+                        fi
+                        ;;
+                esac
+                ;;
+            *)
+                case $CURRENT in
+                    2)
+                        local -a flags=('--help:Show usage guide' '--home:cd to projects directory' '--list:List all worktrees' '--rm:Remove a worktree')
+                        _describe -t flags 'flag' flags
+                        _wt_projects
+                        ;;
+                    3)
+                        _wt_worktrees "${words[2]}"
+                        ;;
+                    4)
+                        local -a common_commands=(
+                            'claude:Start Claude Code session'
+                            'gst:Git status'
+                            'gaa:Git add all'
+                            'gcmsg:Git commit with message'
+                            'gp:Git push'
+                            'gco:Git checkout'
+                            'gd:Git diff'
+                            'gl:Git log'
+                            'npm:Run npm commands'
+                            'yarn:Run yarn commands'
+                            'make:Run make commands'
+                        )
+                        _describe -t commands 'command' common_commands
+                        _command_names -e
+                        ;;
+                    *)
+                        _normal
+                        ;;
+                esac
+                ;;
+        esac
+    }
+    compdef _wt wt
+fi
