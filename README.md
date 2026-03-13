@@ -14,6 +14,7 @@ It works with any terminal-based agent because you're running the real CLI, not 
 
 - **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<prefix>/<worktree-name>` off `origin/main` (configurable via `WT_BRANCH_PREFIX` and `WT_BASE_BRANCH`).
 - **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
+- **Post-startup hooks**: Run commands every time a new tmux session is created for a worktree — launch an AI agent, add tmux splits/panes, or any per-session setup.
 - **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
 - **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
 - **tmux session integration**: Each worktree gets its own tmux session, so every agent runs in an isolated terminal that you can switch between and come back to.
@@ -38,9 +39,13 @@ one question at a time:
    - Read the project's README to figure out what setup commands are needed (e.g. npm install,
      pnpm install, yarn && npx prisma generate) and suggest a post-create hook for it.
    - After each clone, ask if I want to add another repo or if I'm done.
-4. Copy worktree-manager.local.example.zsh to worktree-manager.local.zsh, then edit it with all the
+4. Ask if I want an AI agent (like Claude Code) to launch automatically in every new worktree session.
+   Explain this is a post-startup hook that runs every time a tmux session is created, not just on first
+   creation. If yes, ask which agent command to use (default: `claude`) and configure
+   `wt_post_startup_commands` for each project.
+5. Copy worktree-manager.local.example.zsh to worktree-manager.local.zsh, then edit it with all the
    collected configuration.
-5. Ask if I want terminal tab titles to automatically show the worktree name. Explain that this
+6. Ask if I want terminal tab titles to automatically show the worktree name. Explain that this
    makes tmux set the terminal tab title to the session name (e.g. "wt/my-app/feature-auth"), so
    each tab is easy to identify. If yes, find my tmux config (~/.config/tmux/tmux.conf or
    ~/.tmux.conf) and add `set-option -g set-titles on` and `set-option -g set-titles-string '#S'`
@@ -88,6 +93,18 @@ Uncomment and edit the examples in `worktree-manager.zsh`:
 ```sh
 wt_post_create_commands[my-api]="yarn && npx prisma generate"
 wt_post_create_commands[my-app]="pnpm install"
+```
+
+#### Post-startup hooks
+
+Commands that run every time a new tmux session is created for a worktree — not just the first time. These run after post-create hooks (if any). Use them to launch AI agents, set up tmux pane layouts, or any per-session setup that should apply to every worktree.
+
+```sh
+# Launch Claude Code in every new worktree session
+wt_post_startup_commands[my-app]="claude"
+
+# Create a split pane and launch an agent
+wt_post_startup_commands[my-api]="tmux split-window -h -c '#{pane_current_path}' && claude"
 ```
 
 ## Usage
@@ -192,7 +209,8 @@ In iTerm2, make sure **Profiles → General → Title** includes "Applications i
    - **If it exists on origin** → creates a worktree tracking `origin/feature-x`
    - **If not** → creates a new branch `<prefix>/feature-x` off `origin/main` (prefix defaults to your username)
 4. It runs any registered post-create hooks and approves direnv if applicable.
-5. Finally, it `cd`s you into the worktree (or runs your command there and returns).
+5. It creates or attaches to a tmux session, running any post-startup hooks (e.g. launching an AI agent).
+6. Finally, it `cd`s you into the worktree (or runs your command there and returns).
 
 ## Requirements
 
