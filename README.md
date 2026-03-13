@@ -10,15 +10,29 @@ You're running AI coding agents — [Claude Code](https://docs.anthropic.com/en/
 
 It works with any terminal-based agent because you're running the real CLI, not a wrapper. No plugins, no feature gaps, no lock-in.
 
+## How it works
+
+You register your git repos once. After that, `wt <project> <worktree>` is all you need:
+
+1. Checks if the worktree already exists locally — if so, opens it.
+2. If not, checks whether the branch is already checked out in another worktree and reuses it.
+3. If still not found, fetches from origin:
+   - **Branch exists on origin** → creates a worktree tracking it
+   - **Branch doesn't exist** → creates a new branch `<prefix>/worktree-name` off `origin/main`
+4. Opens a tmux session for the worktree, runs post-create hooks (dependency install, codegen, etc.) and approves direnv if applicable.
+5. Runs any post-startup hooks (e.g. launching an AI agent, customizing your tmux layout).
+
+That's it. One command to go from "I need to work on X" to being inside an isolated checkout with everything set up.
+
 ## Features
 
-- **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<prefix>/<worktree-name>` off `origin/main` (configurable via `WT_BRANCH_PREFIX` and `WT_BASE_BRANCH`).
+- **Smart branch resolution**: If a worktree doesn't exist, `wt` fetches from origin and checks if a matching remote branch exists. If so, it creates a tracking worktree. Otherwise, it creates a new branch named `<prefix>/<worktree-name>` off `origin/main` (all configurable).
 - **Post-create hooks**: Run project-specific setup commands (dependency install, codegen, etc.) automatically when a worktree is created.
 - **Post-startup hooks**: Run commands every time a new tmux session is created for a worktree — launch an AI agent, add tmux splits/panes, or any per-session setup.
+- **tmux session integration**: Each worktree gets its own tmux session, so every agent runs in an isolated terminal that you can switch between and come back to, maintaining your context.
+- **Fuzzy-find completion**: Press Tab and get an interactive fzf picker for projects, worktrees, and flags. Falls back to standard Zsh completion if fzf isn't installed.
 - **direnv support**: Automatically runs `direnv allow` if the worktree contains an `.envrc` file.
 - **Run commands in-place**: Pass a command after the worktree name to execute it there without changing your current directory.
-- **tmux session integration**: Each worktree gets its own tmux session, so every agent runs in an isolated terminal that you can switch between and come back to.
-- **Tab completion**: Full Zsh completion for project names, existing worktree names, `--list`/`--rm` flags, and common commands.
 
 ## Installation
 
@@ -206,17 +220,6 @@ In iTerm2, make sure **Profiles → General → Title** includes "Applications i
         └── add-caching/         # worktree → branch: yourname/add-caching
 ```
 
-## How it works
-
-1. `wt my-app feature-x` checks if `~/projects/worktrees/my-app/feature-x` exists.
-2. If not, it checks whether the branch is already checked out in another worktree.
-3. If still not found, it fetches from origin and checks if `feature-x` exists as a remote branch:
-   - **If it exists on origin** → creates a worktree tracking `origin/feature-x`
-   - **If not** → creates a new branch `<prefix>/feature-x` off `origin/main` (prefix defaults to your username)
-4. It runs any registered post-create hooks and approves direnv if applicable.
-5. It creates or attaches to a tmux session, running any post-startup hooks (e.g. launching an AI agent).
-6. Finally, it `cd`s you into the worktree (or runs your command there and returns).
-
 ## Requirements
 
 - Zsh
@@ -234,5 +237,5 @@ Based on the worktree manager from [incident.io's blog post on shipping faster w
 - **direnv support** — automatically runs `direnv allow` if the worktree has an `.envrc`
 - **`--force` flag for removal** (`wt --rm --force`) to handle worktrees with uncommitted changes
 - **Branch cleanup on removal** — `wt --rm` deletes the local branch as well as the worktree
-- **Working tab completion** — inline `compdef`-based completion instead of writing to a file, with proper support for `--rm --force` and nested completions
+- **Fuzzy-find tab completion** — fzf-powered interactive picker for projects and worktrees, with fallback to standard Zsh completion
 - **Removed legacy `core-wts` path handling** from the original
