@@ -69,6 +69,11 @@ one question at a time:
    Kitty, WezTerm, Terminal.app) and walk them through enabling the setting that lets applications
    change the tab/window title — for example, in iTerm2 this is under Profiles → General → Title
    where "Applications in terminal may change the title" must be checked.
+7. Ask if they want recommended tmux settings for a better worktree experience. Explain that
+   `set -g mouse on` enables mouse support (scroll through output, click to switch panes, drag
+   to resize them) and `set -g history-limit 50000` increases the scrollback buffer so you don't
+   lose output from long-running commands. If yes, find their tmux config and add these settings
+   if they aren't already present, then reload with `tmux source-file <path-to-config>`.
 ```
 
 Or do it manually:
@@ -190,20 +195,31 @@ ln -s ~/.zsh/wt/skills/worktree ~/.claude/skills/worktree
 
 The skill parses your intent, generates a kebab-case worktree name, confirms with you, and runs the right `wt` commands.
 
-## Terminal tab titles
+## Recommended tmux settings
 
-When you use `wt` to jump into a worktree, it creates a tmux session named `wt/<project>/<worktree>`. If your terminal emulator is configured to display the tmux session name, each tab automatically gets a descriptive title — so instead of a sea of identical "zsh" tabs, you see exactly which project and worktree each tab is for.
-
-To enable this, add the following to your tmux config (`~/.config/tmux/tmux.conf` or `~/.tmux.conf`):
+Add these to your tmux config (`~/.config/tmux/tmux.conf` or `~/.tmux.conf`):
 
 ```
+# Enable mouse support (scroll, click panes, resize)
+set -g mouse on
+
+# Increase scrollback buffer
+set -g history-limit 50000
+
+# Show worktree name as terminal tab title
 set-option -g set-titles on
 set-option -g set-titles-string '#S'
 ```
 
-`#S` is the tmux session name. `set-titles on` tells tmux to push it to the terminal as the window title, which iTerm2 (and most other terminal emulators) display as the tab name.
+Then reload your config:
 
-In iTerm2, make sure **Profiles → General → Title** includes "Applications in terminal may change the title".
+```sh
+tmux source-file ~/.config/tmux/tmux.conf
+```
+
+**Mouse support** lets you scroll through output, click to switch panes, and drag to resize them — it just works so much better.
+
+**Tab titles** — `wt` creates tmux sessions named `wt/<project>/<worktree>`, and `set-titles` pushes that to your terminal as the tab name. Instead of a sea of identical "zsh" tabs, you see exactly which project and worktree each tab is for. Ghostty picks up the tmux title automatically — no extra config needed. In iTerm2, you'll also need to enable **Profiles → General → Title → "Applications in terminal may change the title"**.
 
 ## Directory structure
 
