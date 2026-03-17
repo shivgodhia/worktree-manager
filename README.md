@@ -1,5 +1,7 @@
 # wt - Git Worktree Manager for Zsh
 
+> **⚠️ This project is no longer maintained.** Use [**grove**](https://github.com/shivgodhia/grove) instead — it does everything `wt` does plus multi-repo workspace support (group multiple projects into a single workspace with one branch name across all of them). All ongoing development happens in grove.
+
 A lightweight Zsh function that manages [git worktrees](https://git-scm.com/docs/git-worktree) across multiple projects. Navigate to any worktree with a single command — if it doesn't exist yet, it gets created automatically.
 
 ## Why worktrees?
