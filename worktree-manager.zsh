@@ -371,26 +371,31 @@ HELP
         # Resolve post-startup command: project-specific overrides the default
         local startup_cmd="${wt_post_startup_commands[$project]:-$WT_DEFAULT_POST_STARTUP_COMMAND}"
 
+        # Build the full command to send into the new session.
+        # If both post-create and post-startup commands exist, chain them with &&
+        # so the startup command waits for the create command to finish.
+        local full_cmd=""
+        if [[ -n "$is_new_worktree" && -n "${wt_post_create_commands[$project]}" ]]; then
+            full_cmd="${wt_post_create_commands[$project]}"
+        fi
+        if [[ -n "$startup_cmd" ]]; then
+            if [[ -n "$full_cmd" ]]; then
+                full_cmd="${full_cmd} && ${startup_cmd}"
+            else
+                full_cmd="$startup_cmd"
+            fi
+        fi
+
         if [[ -n "$TMUX" ]]; then
             tmux new-session -d -s "$session_name" -c "$wt_path"
-            # Send post-create command into the new session before switching
-            if [[ -n "$is_new_worktree" && -n "${wt_post_create_commands[$project]}" ]]; then
-                tmux send-keys -t "$session_name" "${wt_post_create_commands[$project]}" Enter
-            fi
-            # Send post-startup command (runs every new session, after post-create)
-            if [[ -n "$startup_cmd" ]]; then
-                tmux send-keys -t "$session_name" "$startup_cmd" Enter
+            if [[ -n "$full_cmd" ]]; then
+                tmux send-keys -t "$session_name" "$full_cmd" Enter
             fi
             tmux switch-client -t "$session_name"
         else
             tmux new-session -d -s "$session_name" -c "$wt_path"
-            # Send post-create command after session starts
-            if [[ -n "$is_new_worktree" && -n "${wt_post_create_commands[$project]}" ]]; then
-                tmux send-keys -t "$session_name" "${wt_post_create_commands[$project]}" Enter
-            fi
-            # Send post-startup command (runs every new session, after post-create)
-            if [[ -n "$startup_cmd" ]]; then
-                tmux send-keys -t "$session_name" "$startup_cmd" Enter
+            if [[ -n "$full_cmd" ]]; then
+                tmux send-keys -t "$session_name" "$full_cmd" Enter
             fi
             tmux attach-session -t "$session_name"
         fi
